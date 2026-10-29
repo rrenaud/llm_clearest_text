@@ -138,8 +138,9 @@ marked, for grading.
 ## Data
 
 Probe weights for all three models are in `data/<model>/`. They're small `.npz` files with the layer,
-weights, bias and threshold. The training data goes on Hugging Face (upload pending): for each model,
-the trivia answers with correctness labels and logprob baselines, the chat responses, and Claude's
+weights, bias and threshold. The training data is on Hugging Face at
+[robrenaud/llm-clearest-text-probes](https://huggingface.co/datasets/robrenaud/llm-clearest-text-probes): for each
+model, the trivia answers with correctness labels and logprob baselines, the chat responses, and Claude's
 sentence labels.
 
 ## Layout
