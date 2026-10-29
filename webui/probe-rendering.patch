@@ -1,0 +1,278 @@
+diff --git a/src/lib/components/chat/Messages/Markdown.svelte b/src/lib/components/chat/Messages/Markdown.svelte
+index 77fd11c..22b3a76 100644
+--- a/src/lib/components/chat/Messages/Markdown.svelte
++++ b/src/lib/components/chat/Messages/Markdown.svelte
+@@ -8,6 +8,7 @@
+ 	import colonFenceExtension from '$lib/utils/marked/colon-fence-extension';
+ 	import footnoteExtension from '$lib/utils/marked/footnote-extension';
+ 	import citationExtension from '$lib/utils/marked/citation-extension';
++	import probeExtension from '$lib/utils/marked/probe-extension';
+ 
+ 	const options = {
+ 		throwOnError: false
+@@ -16,6 +17,7 @@
+ 	marked.use(markedKatexExtension(options));
+ 	marked.use(markedExtension(options));
+ 	marked.use(citationExtension(options));
++	marked.use(probeExtension());
+ 	marked.use(footnoteExtension(options));
+ 	marked.use(colonFenceExtension(options));
+ 	marked.use(disableSingleTilde);
+diff --git a/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte b/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte
+index 4c2732c..75481b8 100644
+--- a/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte
++++ b/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte
+@@ -32,6 +32,8 @@
+ 	import MentionToken from './MarkdownInlineTokens/MentionToken.svelte';
+ 	import NoteLinkToken from './MarkdownInlineTokens/NoteLinkToken.svelte';
+ 	import SourceToken from './SourceToken.svelte';
++	import ProbeSpanToken from './MarkdownInlineTokens/ProbeSpanToken.svelte';
++	import ProbeSentenceToken from './MarkdownInlineTokens/ProbeSentenceToken.svelte';
+ 
+ 	export let id: string;
+ 	export let done = true;
+@@ -139,6 +141,18 @@
+ 					>{/if}
+ 			{/await}
+ 		{:else}<Image src={token.href} alt={token.text} allowExternal={true} />{/if}
++	{:else if token.type === 'probeSpan'}
++		<ProbeSpanToken {token}
++			><svelte:self id={`${id}-probe`} tokens={token.tokens} {sourceIds} {onSourceClick} {done} /></ProbeSpanToken
++		>
++	{:else if token.type === 'probeToken'}
++		<span class="probe-tok"
++			><svelte:self id={`${id}-probe-t`} tokens={token.tokens} {sourceIds} {onSourceClick} {done} /></span
++		>
++	{:else if token.type === 'probeSentence'}
++		<ProbeSentenceToken {token}
++			><svelte:self id={`${id}-probe-s`} tokens={token.tokens} {sourceIds} {onSourceClick} {done} /></ProbeSentenceToken
++		>
+ 	{:else if token.type === 'strong'}
+ 		<strong
+ 			><svelte:self id={`${id}-strong`} tokens={token.tokens} {sourceIds} {onSourceClick} /></strong
+diff --git a/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens/ProbeSentenceToken.svelte b/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens/ProbeSentenceToken.svelte
+new file mode 100644
+index 0000000..56e4f20
+--- /dev/null
++++ b/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens/ProbeSentenceToken.svelte
+@@ -0,0 +1,29 @@
++<script lang="ts">
++	// A sentence the boilerplate/filler probes flagged: shown dimmed, never restyled with
++	// bold/italic (the model owns those), with the probe readout on hover.
++	import { probeTooltip } from './probeTooltip';
++
++	export let token: any;
++
++	$: d = token.data ?? {};
++	$: flags = d.flags ?? [];
++	$: tip = [
++		d.boilerplate !== undefined
++			? `<div><b>Boilerplate</b> (trained-in caveat or pleasantry): ${(d.boilerplate * 100).toFixed(0)}%</div>`
++			: '',
++		d.filler !== undefined ? `<div><b>Filler</b> (adds no information): ${(d.filler * 100).toFixed(0)}%</div>` : ''
++	].join('');
++</script>
++
++<!-- prettier-ignore -->
++{#if flags.length}<span use:probeTooltip={tip} class="probe-dim" data-flags={flags.join(' ')}><slot /></span>{:else}<span title={tip.replace(/<[^>]+>/g, ' ')}><slot /></span>{/if}
++
++<style>
++	.probe-dim {
++		opacity: 0.42;
++		transition: opacity 0.15s;
++	}
++	.probe-dim:hover {
++		opacity: 0.85;
++	}
++</style>
+diff --git a/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens/ProbeSpanToken.svelte b/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens/ProbeSpanToken.svelte
+new file mode 100644
+index 0000000..751f664
+--- /dev/null
++++ b/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens/ProbeSpanToken.svelte
+@@ -0,0 +1,81 @@
++<script lang="ts">
++	// A factual span annotated by internal probes: correctness risk (wavy underline, only
++	// for the flagged tail) and provenance (tint for recalled-from-weights, dotted underline
++	// for numbers the model computed). Hover shows the probe readout and top-k alternatives.
++	import { probeTooltip } from './probeTooltip';
++
++	export let token: any;
++
++	$: d = token.data ?? {};
++	$: flags = d.flags ?? [];
++	$: risky = flags.includes('risk');
++
++	const esc = (s: string) =>
++		String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
++
++	const provLabel: Record<string, string> = {
++		ctx: 'Found in your messages',
++		param: 'Recalled from model weights (not in your messages)',
++		computed: 'Number not in your messages; likely computed by the model'
++	};
++
++	const mark = 'background:rgb(239 68 68 / .35);color:inherit;border-radius:2px;padding:0 2px';
++	// Options at the contested token; the chosen one stays in the list, highlighted.
++	$: options = [
++		...(d.alts ?? []).filter(([t, p]: [string, number]) => t === d.tok || (t !== '' && p >= 0.005)),
++		// A sampled token can fall outside the top-k; list it anyway with its own probability.
++		...(d.p !== undefined && !(d.alts ?? []).some(([t]: [string, number]) => t === d.tok) ? [[d.tok, d.p]] : [])
++	];
++	$: others = options.filter(([t]: [string, number]) => t !== d.tok);
++
++	$: tip = [
++		d.risk !== undefined
++			? `<div><b>${risky ? 'Likely wrong' : 'Correctness probe'}</b>: risk ${(d.risk * 100).toFixed(0)}%${risky ? ' (top tail of spans)' : ''}</div>`
++			: '',
++		d.prov ? `<div>${esc(provLabel[d.prov] ?? d.prov)}</div>` : '',
++		d.alts?.length
++			? `<div style="margin-top:4px">Least certain at <mark style="${mark}">${esc(d.tok ?? '')}</mark>` +
++				(d.p !== undefined && others[0]?.[1] > d.p ? ' <b>not its top choice</b>' : '') +
++				`</div><div style="margin-top:2px;opacity:.8">Next-token options:</div>` +
++				options
++					.map(
++						([t, p]: [string, number]) =>
++							`<div style="display:flex;gap:8px;justify-content:space-between"><code${t === d.tok ? ` style="${mark}"` : ''}>${esc(JSON.stringify(t))}</code><span>${(p * 100).toFixed(1)}%${t === d.tok ? ' (chosen)' : ''}</span></div>`
++					)
++					.join('')
++			: ''
++	].join('');
++</script>
++
++<!-- prettier-ignore -->
++<span use:probeTooltip={tip} class="probe-span" class:probe-risk={risky} class:probe-param={d.prov === 'param'} class:probe-computed={d.prov === 'computed'} class:probe-ctx={d.prov === 'ctx'} data-risk={d.risk}><slot /></span>
++
++<style>
++	.probe-risk {
++		text-decoration-line: underline;
++		text-decoration-style: wavy;
++		text-decoration-color: rgb(239 68 68 / 0.85);
++		text-decoration-thickness: 1.5px;
++		text-underline-offset: 3px;
++		cursor: help;
++	}
++	/* The contested token inside the span (where the alternatives come from). */
++	.probe-risk :global(.probe-tok) {
++		background: rgb(239 68 68 / 0.18);
++		border-bottom: 2px solid rgb(239 68 68 / 0.9);
++		border-radius: 2px;
++	}
++	.probe-span:not(.probe-risk) :global(.probe-tok) {
++		border-bottom: 1px dashed rgb(156 163 175 / 0.8);
++	}
++	.probe-param {
++		background: rgb(168 85 247 / 0.08);
++		border-radius: 3px;
++	}
++	.probe-computed:not(.probe-risk) {
++		text-decoration-line: underline;
++		text-decoration-style: dotted;
++		text-decoration-color: rgb(59 130 246 / 0.8);
++		text-underline-offset: 3px;
++	}
++</style>
+diff --git a/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens/probeTooltip.ts b/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens/probeTooltip.ts
+new file mode 100644
+index 0000000..dbeac29
+--- /dev/null
++++ b/src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens/probeTooltip.ts
+@@ -0,0 +1,24 @@
++// Svelte action: attach a tippy tooltip with sanitized HTML content. Used instead of the shared
++// Tooltip component, whose template adds whitespace around its slot (visible inside inline text).
++import DOMPurify from 'dompurify';
++import tippy from 'tippy.js';
++
++export function probeTooltip(node: HTMLElement, content: string) {
++	const instance = tippy(node, {
++		content: DOMPurify.sanitize(content),
++		allowHTML: true,
++		placement: 'top',
++		touch: true,
++		theme: 'dark',
++		arrow: false,
++		offset: [0, 4]
++	});
++	return {
++		update(next: string) {
++			instance.setContent(DOMPurify.sanitize(next));
++		},
++		destroy() {
++			instance.destroy();
++		}
++	};
++}
+diff --git a/src/lib/utils/index.ts b/src/lib/utils/index.ts
+index bba75be..be49ab7 100644
+--- a/src/lib/utils/index.ts
++++ b/src/lib/utils/index.ts
+@@ -25,6 +25,7 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
+ import { marked } from 'marked';
+ import markedExtension from '$lib/utils/marked/extension';
+ import markedKatexExtension from '$lib/utils/marked/katex-extension';
++import { stripProbeTags } from '$lib/utils/marked/probe-extension';
+ import hljs from 'highlight.js';
+ import { decode } from 'html-entities';
+ 
+@@ -1084,6 +1085,8 @@ export const removeDetails = (content, types) => {
+ };
+ 
+ export const removeAllDetails = (content) => {
++	// Probe annotations are display-only; keep them out of copies and TTS.
++	content = stripProbeTags(content);
+ 	// First pass: strip <details> blocks on the full string before code-fence
+ 	// splitting, so blocks whose body contains triple backticks are caught.
+ 	// (replaceOutsideCode splits on ``` fences, which breaks the <details>
+diff --git a/src/lib/utils/marked/probe-extension.ts b/src/lib/utils/marked/probe-extension.ts
+new file mode 100644
+index 0000000..90a93fd
+--- /dev/null
++++ b/src/lib/utils/marked/probe-extension.ts
+@@ -0,0 +1,47 @@
++// Inline tags emitted by the probed model server (llm_clearest_text/server/probed_server.py):
++//   <probe-s d="...">sentence</probe-s>   sentence-level signals (boilerplate, filler)
++//   <probe d="...">span</probe>           span-level signals (correctness risk, provenance)
++//   <probe-t d="">piece</probe-t>         inside a span: the least-certain token (where alternatives come from)
++// `d` is URL-encoded JSON.
++
++const decode = (d: string) => {
++	try {
++		return JSON.parse(decodeURIComponent(d));
++	} catch {
++		return {};
++	}
++};
++
++const probeRule = (tag: string, type: string) => {
++	const rule = new RegExp(`^<${tag} d="([^"]*)">([\\s\\S]*?)</${tag}>`);
++	return {
++		name: type,
++		level: 'inline' as const,
++		start(src: string) {
++			const i = src.indexOf(`<${tag} `);
++			return i < 0 ? undefined : i;
++		},
++		tokenizer(this: any, src: string) {
++			const match = rule.exec(src);
++			if (!match) return;
++			return {
++				type,
++				raw: match[0],
++				data: decode(match[1]),
++				tokens: this.lexer.inlineTokens(match[2])
++			};
++		},
++		renderer(this: any, token: any) {
++			return this.parser.parseInline(token.tokens);
++		}
++	};
++};
++
++export const stripProbeTags = (content: string) =>
++	content.replace(/<\/?probe(?:-[st])?(?: d="[^"]*")?>/g, '');
++
++export default function () {
++	return {
++		extensions: [probeRule('probe-s', 'probeSentence'), probeRule('probe-t', 'probeToken'), probeRule('probe', 'probeSpan')]
++	};
++}

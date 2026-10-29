@@ -1,0 +1,33 @@
+{
+ "n_sentences": 7615,
+ "layers": [
+  4,
+  8,
+  12,
+  16,
+  20,
+  24,
+  28
+ ],
+ "boilerplate": {
+  "layer": 16,
+  "test_auroc": 0.995255018355073,
+  "test_ap": 0.8881392639812211,
+  "threshold": 0.8212235569953918,
+  "recall_at_threshold": 0.75,
+  "positive_rate": 0.025082074852265265
+ },
+ "filler": {
+  "layer": 16,
+  "test_auroc": 0.9710232364707744,
+  "test_ap": 0.8730669959965005,
+  "threshold": 0.6222718358039856,
+  "recall_at_threshold": 0.8325123152709359,
+  "positive_rate": 0.10426789231779383
+ },
+ "risk": {
+  "n_spans": 6519,
+  "quantile": 0.95,
+  "threshold": 0.9670672118663788
+ }
+}

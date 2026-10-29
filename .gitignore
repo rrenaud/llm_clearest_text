@@ -1,0 +1,22 @@
+# environments and caches
+envs/
+.uv-cache/
+.uv-python/
+.pw-browsers/
+.hf-tmp/
+__pycache__/
+# Open WebUI fork checkout (see webui/probe-rendering.patch) and its database
+vendor/
+webui-data/
+# secrets
+.modal_api_key
+.modal_url
+.webui_secret_key
+# training data and hidden-state caches (published on Hugging Face instead)
+hf/
+data/*
+!data/*/
+data/*/*
+!data/*/probe_*.npz
+!data/*/probe_*.json
+!data/*/eval_prose_risk.json

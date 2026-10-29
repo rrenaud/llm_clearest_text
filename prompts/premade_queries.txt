@@ -1,0 +1,42 @@
+What is the Chinchilla-optimal ratio of training tokens to parameters, and which paper established it?
+In statistics, what is the term for the situation where the functional form of a fitted model (e.g. a 3-parameter power law) cannot represent the true data-generating process, no matter how the parameters are fit?
+Does the transformer KV cache grow linearly or quadratically with sequence length? Give the formula for its size in bytes.
+Roughly how many bytes of KV cache per token does Llama-2-70B need in fp16? Show the arithmetic.
+In self-attention, what are the distinct roles of queries, keys, and values, and are values derived from Q or K?
+What is the key idea of FlashAttention, who wrote it, and what year?
+Why does softmax attention have far higher associative-memory capacity than linear attention? Relate it to modern Hopfield networks.
+What is the classical storage capacity of a Hopfield network with N neurons, as a fraction of N?
+Describe the standard MoE router in transformers, and explain what Expert Choice routing changes and why it is problematic at batch size 1 inference.
+What is top-1 routing in the Switch Transformer, and who authored that paper?
+In MoE language models, do experts in practice tend to specialize by high-level semantic domain or by low-level token/syntactic patterns?
+Write the recurrent state update for Mamba-2 (SSD) and for Gated DeltaNet, and state the key difference.
+Who wrote the original Mamba paper and when? What does 'SSD' stand for in Mamba-2?
+Why can recurrent/SSM layers be trained in parallel despite being recurrences? Name the property and the two main algorithmic approaches.
+Who is the primary author of RWKV, and what is 'state tuning' in the RWKV community?
+What are GPTQ and AWQ, who proposed them, and what is the core idea of each?
+If you add zero-mean Gaussian noise of variance σ² to a logit before a sigmoid, what is the probit (MacKay) approximation for the expected output, and what does it imply about effective temperature?
+Does weight quantization of an LLM systematically make its output distribution flatter, or is the effect better described as noise? Explain briefly.
+What is GRPO, which paper introduced it, and how does it compute advantages without a value network?
+What does the Brier score measure, give its formula, and is it a proper scoring rule?
+How does the Ranked Probability Score relate to the Brier score, and what is its continuous analogue?
+What is the 'pass@k' metric and why does optimizing pass@1 with standard RL tend to reduce sample diversity?
+Summarize 'Learning to Compress Prompts with Gist Tokens': authors, venue, mechanism, headline compression.
+What is a 'Cartridge' in the context of LLM long-context serving, and what is the 'self-study' training recipe?
+Why is prefix tuning provably no more expressive than directly optimizing the initial hidden state for a linear recurrent / SSM model?
+Do sparse autoencoders used in mechanistic interpretability perform dimensionality reduction? Explain.
+Which 2023 papers popularized sparse autoencoders for decomposing LLM activations into interpretable features?
+What is the group soft-thresholding ('Group ReLU') operator used in group-sparse coding, as a formula?
+What are epistemic neural networks (epinets), who introduced them, and what is the basic architecture?
+What did McGrath et al. (2022) show about AlphaZero's chess knowledge, and what method did they use?
+How many input planes does Leela Chess Zero's network take, and how many entries are in its policy head output?
+What does 'computing in an awkward basis on a GPU' mean? Give two examples and how they are fixed.
+Why can't you truncate or slice a cached Mamba/linear-attention state at an arbitrary token position the way you can with a transformer KV cache, and how do inference engines handle prefix caching for such models?
+What was the central experimental result of the 2024 'Accuracy is Not All You Need' paper on LLM quantization?
+Explain the NBA team-foul penalty ('bonus') rules, including the last-two-minutes rule and overtime.
+Who leads the NBA in the product of championships won as a player times championships won as a head coach? Give the numbers.
+Describe Kyrie Irving's most famous clutch shot: the game, the opponent, the time remaining, and the final score.
+In which seasons was Jimmy Butler named to an NBA All-Defensive team, and which team? Also, does his nickname 'Jimmy Buckets' refer to his defense?
+How do NBA rookie scale contracts work for first-round picks (length, options, salary range relative to scale)?
+What does the Defect's card 'Scrape' do in Slay the Spire, and which archetype is it built for?
+Who developed Slay the Spire, and when did it leave early access? What are the four orb types in the Defect's kit?
+Describe how Chrono Ark differs from Slay the Spire in party structure and enemy timing.

@@ -1,0 +1,9 @@
+{
+ "n": 468,
+ "wrong_rate": 0.29914529914529914,
+ "auroc_max_span_risk": 0.8612151567944252,
+ "threshold": 0.9859171420335769,
+ "flag_rate": 0.08974358974358974,
+ "precision_at_threshold": 0.9047619047619048,
+ "recall_at_threshold": 0.2714285714285714
+}
